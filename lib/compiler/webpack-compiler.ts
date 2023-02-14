@@ -30,7 +30,7 @@ export class WebpackCompiler {
     isDebugEnabled = false,
     watchMode = false,
     onSuccess?: () => void,
-  ) {
+  ): Promise<void> {
     const cwd = process.cwd();
     const configPath = join(cwd, tsConfigPath!);
     if (!existsSync(configPath)) {
@@ -112,41 +112,44 @@ export class WebpackCompiler {
       watch = webpackConfiguration.watch;
     }
 
-    const afterCallback = (
-      err: Error | null | undefined,
-      stats: webpack.Stats | webpack.MultiStats | undefined,
-    ) => {
-      if (err && stats === undefined) {
-        // Could not complete the compilation
-        // The error caught is most likely thrown by underlying tasks
-        console.log(err);
-        return process.exit(1);
-      }
-      const statsOutput = stats!.toString({
-        chunks: false,
-        colors: true,
-        modules: false,
-        assets: false,
-      });
-      if (!err && !stats!.hasErrors()) {
-        if (onSuccess) {
-          onSuccess();
+    return new Promise((resolve) => {
+      const afterCallback = (
+        err: Error | null | undefined,
+        stats: webpack.Stats | webpack.MultiStats | undefined,
+      ) => {
+        if (err && stats === undefined) {
+          // Could not complete the compilation
+          // The error caught is most likely thrown by underlying tasks
+          console.log(err);
+          return process.exit(1);
         }
-      } else if (!watchMode && !watch) {
+        const statsOutput = stats!.toString({
+          chunks: false,
+          colors: true,
+          modules: false,
+          assets: false,
+        });
+        if (!err && !stats!.hasErrors()) {
+          if (onSuccess) {
+            onSuccess();
+          }
+        } else if (!watchMode && !watch) {
+          console.log(statsOutput);
+          return process.exit(1);
+        }
         console.log(statsOutput);
-        return process.exit(1);
-      }
-      console.log(statsOutput);
-    };
+        resolve();
+      };
 
-    if (watchMode || watch) {
-      compiler.hooks.watchRun.tapAsync('Rebuild info', (params, callback) => {
-        console.log(`\n${INFO_PREFIX} Webpack is building your sources...\n`);
-        callback();
-      });
-      compiler.watch(watchOptions! || {}, afterCallback);
-    } else {
-      compiler.run(afterCallback);
-    }
+      if (watchMode || watch) {
+        compiler.hooks.watchRun.tapAsync('Rebuild info', (params, callback) => {
+          console.log(`\n${INFO_PREFIX} Webpack is building your sources...\n`);
+          callback();
+        });
+        compiler.watch(watchOptions! || {}, afterCallback);
+      } else {
+        compiler.run(afterCallback);
+      }
+    });
   }
 }

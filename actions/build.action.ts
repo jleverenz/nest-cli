@@ -123,24 +123,21 @@ export class BuildAction extends AbstractAction {
         configuration.compilerOptions!.webpackConfigPath!,
       );
 
-      const onSuccessWrapper = () => {
-        if (onSuccess) {
-          onSuccess();
-        }
-        if (!watchMode) {
-          this.assetsManager.closeWatchers();
-        }
-      }
-
-      return this.webpackCompiler.run(
+      await this.webpackCompiler.run(
         configuration,
         webpackConfigFactoryOrConfig,
         pathToTsconfig,
         appName,
         isDebugEnabled,
         watchMode,
-        onSuccessWrapper,
+        onSuccess,
       );
+
+      if (!watchMode) {
+        this.assetsManager.closeWatchers();
+      }
+
+      return;
     }
 
     if (watchMode) {
