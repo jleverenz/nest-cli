@@ -168,11 +168,10 @@ export class StartAction extends BuildAction {
       processArgs.unshift(inspectFlag);
     }
     if (this.isSourceMapSupportPkgAvailable()) {
-      processArgs.unshift('-r source-map-support/register');
+      processArgs.unshift('-r', 'source-map-support/register');
     }
     return spawn(binaryToRun, processArgs, {
       stdio: 'inherit',
-      shell: true,
     });
   }
 
